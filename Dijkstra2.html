@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng thuật toán Dijkstra (Grid 20x30)</title>
+<style>
+    :root {
+        --bg-main: #f9fafb;
+        --bg-card: #ffffff;
+        --border-color: #e0e0e0;
+        --accent: #2563eb;
+        --accent-hover: #1e40af;
+        --wall: #111827;
+        --visited: #93c5fd;
+        --path: #ef4444;
+        --start: #22c55e;
+        --end: #189aea;
+        --text: #111827;
+        --shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 30px 20px;
+    }
+
+    h1 {
+        margin-bottom: 15px;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.5px;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+    }
+
+    #controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 8px 16px;
+        border: none;
+        background-color: var(--accent);
+        color: white;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    #grid {
+        display: grid;
+        grid-template-columns: repeat(30, 25px);
+        grid-template-rows: repeat(20, 25px);
+        gap: 1px;
+        background-color: var(--border-color);
+        margin-bottom: 20px;
+        padding: 8px;
+        border-radius: 12px;
+        background-clip: padding-box;
+        box-shadow: var(--shadow);
+        user-select: none;
+    }
+
+    .cell {
+        width: 25px;
+        height: 25px;
+        background-color: var(--bg-card);
+        border-radius: 4px;
+        transition: background-color 0.1s ease-in;
+    }
+
+    .wall { background-color: var(--wall); }
+    .start { background-color: var(--start); box-shadow: 0 0 5px 2px rgba(34,197,94,0.4); }
+    .end { background-color: var(--end); box-shadow: 0 0 5px 2px rgba(220,38,38,0.4); }
+    .visited { background-color: var(--visited); }
+    .path { background-color: var(--path); }
+
+    #result {
+        width: 760px;
+        max-width: 90vw;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 10px 14px;
+        background-color: var(--bg-card);
+        height: 220px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-family: Consolas, monospace;
+        box-shadow: var(--shadow);
+        line-height: 1.4;
+    }
+
+    #result::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #result::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    #result::-webkit-scrollbar-thumb:hover {
+        background-color: #94a3b8;
+    }
+
+    footer {
+        margin-top: 25px;
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+
+    footer span {
+        color: var(--accent);
+        font-weight: 600;
+    }
+</style>
+</head>
+
+<body>
+<h1>Mô phỏng thuật toán Dijkstra - Lưới 20x30</h1>
+<div id="controls">
+    <button onclick="setMode('wall')">🧱 Tạo tường</button>
+    <button onclick="setMode('start')">🟢 Chọn điểm bắt đầu</button>
+    <button onclick="setMode('end')">🔴 Chọn điểm kết thúc</button>
+    <button onclick="startDijkstra()">⚙️ Chạy Dijkstra</button>
+    <button onclick="randomGrid()">🎲 Tạo ngẫu nhiên</button>
+    <button onclick="resetGrid()">🔄 Làm mới</button>
+</div>
+
+<div id="grid"></div>
+<div id="result"></div>
+
+<footer>There's no footer lol</footer>
+
+<script>
+/* 🔽 GIỮ NGUYÊN TOÀN BỘ JAVASCRIPT CỦA CẬU Ở ĐÂY 🔽 */
+const rows = 20, cols = 30;
+const gridEl = document.getElementById("grid");
+const resultEl = document.getElementById("result");
+
+let grid = [];
+let startCell = null, endCell = null;
+let mode = 'wall';
+
+function createGrid() {
+    gridEl.innerHTML = '';
+    grid = [];
+    for (let r = 0; r < rows; r++) {
+        const row = [];
+        for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.onclick = () => handleCellClick(cell);
+            gridEl.appendChild(cell);
+            row.push({r, c, wall: false, dist: Infinity, prev: null});
+        }
+        grid.push(row);
+    }
+}
+
+function setMode(m) { mode = m; }
+
+function handleCellClick(cell) {
+    const r = +cell.dataset.row;
+    const c = +cell.dataset.col;
+    const node = grid[r][c];
+
+    if (mode === 'wall') {
+        node.wall = !node.wall;
+        cell.classList.toggle('wall', node.wall);
+    } else if (mode === 'start') {
+        if (startCell) startCell.classList.remove('start');
+        startCell = cell;
+        cell.classList.add('start');
+    } else if (mode === 'end') {
+        if (endCell) endCell.classList.remove('end');
+        endCell = cell;
+        cell.classList.add('end');
+    }
+}
+
+function neighbors(node) {
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    const result = [];
+    for (let [dr, dc] of dirs) {
+        const nr = node.r + dr, nc = node.c + dc;
+        if (nr>=0 && nr<rows && nc>=0 && nc<cols && !grid[nr][nc].wall)
+            result.push(grid[nr][nc]);
+    }
+    return result;
+}
+
+async function startDijkstra() {
+    // Clear previous path and visited highlights
+    for (let cell of gridEl.children) {
+        cell.classList.remove('visited', 'path');
+    }
+    if (!startCell || !endCell) {
+        alert("Hãy chọn điểm bắt đầu và kết thúc!");
+        return;
+    }
+
+    const start = grid[startCell.dataset.row][startCell.dataset.col];
+    const end = grid[endCell.dataset.row][endCell.dataset.col];
+    const visitedOrder = [];
+
+    for (let row of grid) for (let node of row) {
+        node.dist = Infinity;
+        node.prev = null;
+    }
+
+    start.dist = 0;
+    const pq = [start];
+
+    while (pq.length > 0) {
+        pq.sort((a,b)=>a.dist-b.dist);
+        const node = pq.shift();
+
+        if (node === end) break; 
+
+        if (!visitedOrder.includes(node)) visitedOrder.push(node);
+
+        for (let nb of neighbors(node)) {
+            const newDist = node.dist + 1; 
+            if (newDist < nb.dist) {
+                nb.dist = newDist;
+                nb.prev = node;
+                if (!pq.includes(nb)) pq.push(nb);
+            }
+        }
+
+        if (node !== start && node !== end) {
+            const cell = gridEl.children[node.r * cols + node.c];
+            cell.classList.add('visited');
+        }
+    }
+
+    let pathNode = end;
+    const path = [];
+    while (pathNode) {
+        path.unshift(pathNode);
+        pathNode = pathNode.prev;
+    }
+
+    if (path.length === 1 && path[0] !== start) {
+        alert("Không có đường đi!");
+        return;
+    }
+
+    for (let p of path) {
+        if (p !== start && p !== end) {
+            const cell = gridEl.children[p.r * cols + p.c];
+            cell.classList.add('path');
+        }
+    }
+
+    let resultText = "Thứ tự các ô được duyệt:\n";
+    visitedOrder.forEach((n, i) => {
+        resultText += `${i+1}. (${n.r}, ${n.c})\n`;
+    });
+
+    resultText += `\nĐường đi ngắn nhất (${path.length-1} bước):\n`;
+    resultText += path.map(n=>`(${n.r},${n.c})`).join(' -> ');
+    resultEl.textContent = resultText;
+}
+function clearPath() {
+    const cells = document.querySelectorAll(".cell");
+    cells.forEach(cell => {
+        if (
+            !cell.classList.contains("start") &&
+            !cell.classList.contains("end") &&
+            !cell.classList.contains("wall")
+        ) {
+            cell.style.backgroundColor = "white";
+        }
+    });
+}
+
+function randomGrid() {
+    resetGrid();
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (Math.random() < 0.25) {
+                grid[r][c].wall = true;
+                gridEl.children[r * cols + c].classList.add('wall');
+            }
+        }
+    }
+    startCell = gridEl.children[0];
+    endCell = gridEl.children[rows*cols - 1];
+    startCell.classList.add('start');
+    endCell.classList.add('end');
+}
+
+function resetGrid() {
+    createGrid();
+    startCell = null;
+    endCell = null;
+    resultEl.textContent = '';
+}
+
+createGrid();
+</script>
+</body>
+</html>
