@@ -15,7 +15,7 @@
         --visited: #93c5fd;
         --path: #ef4444;
         --start: #22c55e;
-        --end: #189aea;
+        --end: #d6f815;
         --text: #111827;
         --shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
@@ -139,7 +139,7 @@
 <div id="controls">
     <button onclick="setMode('wall')">🧱 Tạo tường</button>
     <button onclick="setMode('start')">🟢 Chọn điểm bắt đầu</button>
-    <button onclick="setMode('end')">🔴 Chọn điểm kết thúc</button>
+    <button onclick="setMode('end')">🟡 Chọn điểm kết thúc</button>
     <button onclick="startDijkstra()">⚙️ Chạy Dijkstra</button>
     <button onclick="randomGrid()">🎲 Tạo ngẫu nhiên</button>
     <button onclick="resetGrid()">🔄 Làm mới</button>
@@ -151,7 +151,18 @@
 <footer></footer>
 
 <script>
-const rows = 20, cols = 30;
+let rows = 20, cols = 30;
+
+// Kiểm tra và đảm bảo rows, cols là số nguyên dương > 0
+if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows <= 0 || cols <= 0) {
+    alert("Kích thước lưới không hợp lệ (phải là số nguyên dương). Thiết lập về mặc định 20x30.");
+    rows = 20;
+    cols = 30;
+}
+
+// Bảo đảm luôn có ít nhất 1 ô để có thể đặt điểm bắt đầu và kết thúc
+rows = Math.max(1, rows);
+cols = Math.max(1, cols);
 const gridEl = document.getElementById("grid");
 const resultEl = document.getElementById("result");
 
@@ -322,5 +333,3 @@ createGrid();
 </script>
 </body>
 </html>
-
-
