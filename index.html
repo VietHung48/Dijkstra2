@@ -298,17 +298,18 @@ async function startDijkstra() {
     resultEl.textContent = resultText;
 }
 function clearPath() {
-            const cells = document.querySelectorAll(".cell");
-            cells.forEach(cell => {
-                if (
-                    !cell.classList.contains("start") &&
-                    !cell.classList.contains("end") &&
-                    !cell.classList.contains("wall")
-                ) {
-                    cell.style.backgroundColor = "white";
-                }
-            });
+    const cells = document.querySelectorAll(".cell");
+    cells.forEach(cell => {
+        if (
+            !cell.classList.contains("start") &&
+            !cell.classList.contains("end") &&
+            !cell.classList.contains("wall")
+        ) {
+            cell.style.backgroundColor = "white";
         }
+    });
+}
+
 
 function randomGrid() {
     resetGrid();
@@ -337,5 +338,6 @@ createGrid();
 </script>
 </body>
 </html>
+
 
 
