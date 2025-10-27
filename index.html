@@ -202,10 +202,14 @@ function handleCellClick(cell) {
         if (startCell) startCell.classList.remove('start');
         startCell = cell;
         cell.classList.add('start');
+        node.wall = false;
+        cell.classList.remove('wall');
     } else if (mode === 'end') {
         if (endCell) endCell.classList.remove('end');
         endCell = cell;
         cell.classList.add('end');
+        node.wall = false;
+        cell.classList.remove('wall');
     }
 }
 
@@ -296,14 +300,14 @@ async function startDijkstra() {
 function clearPath() {
     const cells = document.querySelectorAll(".cell");
     cells.forEach(cell => {
-        if (
-            !cell.classList.contains("start") &&
-            !cell.classList.contains("end") &&
-            !cell.classList.contains("wall")
-        ) {
-            cell.style.backgroundColor = "white";
-        }
+        cell.className = "cell"; // Xóa hết các class khác, giữ lại class mặc định
+        cell.style.backgroundColor = ""; // Đặt lại màu trắng
     });
+
+    // reset cả điểm start/end trong biến lưu:
+    startCell = null;
+    endCell = null;
+    resultEl.textContent = '';
 }
 
 function randomGrid() {
@@ -333,3 +337,4 @@ createGrid();
 </script>
 </body>
 </html>
+
